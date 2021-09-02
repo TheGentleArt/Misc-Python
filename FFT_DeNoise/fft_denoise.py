@@ -1,9 +1,12 @@
 # J.Williams
 # In hopes of being used to filter steady-state(ish) data to filter out noise
-# 'Denoising Data with FFT [Python]' from 'Steve Brunton' on YouTube was a big
-#  help in making this.
+# Main sources:
+#    'Denoising Data with FFT [Python]','Steve Brunton', (YouTube)
+#     https://blog.endaq.com/vibration-analysis-fft-psd-and-spectrogram
+
 import numpy as np; pi = np.pi
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import pandas as pd
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
@@ -45,8 +48,8 @@ f_rms = np.zeros(steps_rms)  # Create blank array of amplitude for rms calculati
 for i in range(0, steps_rms):
     t_rms[i] = np.mean(t[(i*window_width_rms):((i+1)*window_width_rms)])
     f_rms[i] = np.sqrt(np.mean(f[(i*window_width_rms):((i+1)*window_width_rms)]**2))
-t_rms = pd.Series(t_rms)  # Convert from numpy array to pandas series 
-f_rms = pd.Series(f_rms)  # Convert from numpy array to pandas series 
+t_rms = pd.Series(t_rms)  # Convert from numpy array to pandas series
+f_rms = pd.Series(f_rms)  # Convert from numpy array to pandas series
 
 # Compute the Fast Fourier Transform (FFT); break into components, add to df
 fhat = np.fft.fft(f)  # Compute the fft
@@ -73,7 +76,7 @@ fhat_clean = fhat * (PSD > PSDcutoff)  # Filter out fft data based on cutoff val
 ffilt = np.fft.ifft(fhat_clean)  # Inverse FFT for filtered time signal, to get cleaned data back
 ffilt = np.real(ffilt)  # Convert from complex to real number, since imag component should be zero
 ffilt = pd.Series(ffilt)  # Convert from numpy array to pandas series
-df = df.assign(ffilt=ffilt)  #Add filtered data result to the dataframe
+df = df.assign(ffilt=ffilt)  # Add filtered data result to the dataframe
 
 # Get RMS data of cleaned data
 window_width_rms = int(np.floor(1/dt))  # RMS calculation window width
@@ -83,7 +86,7 @@ f_rms_filt = np.zeros(steps_rms)  # Create blank array of amplitude for rms calc
 for i in range(0, steps_rms):
     t_rms_filt[i] = np.mean(t[(i*window_width_rms):((i+1)*window_width_rms)])
     f_rms_filt[i] = np.sqrt(np.mean(ffilt[(i*window_width_rms):((i+1)*window_width_rms)]**2))
-t_rms_filt = pd.Series(t_rms_filt)  # Convert from numpy array to pandas series 
+t_rms_filt = pd.Series(t_rms_filt)  # Convert from numpy array to pandas series
 f_rms_filt = pd.Series(f_rms_filt)  # Convert from numpy array to pandas series
 
 # Plot prep ... or something like that
@@ -106,39 +109,48 @@ PSD = PSD[np.arange(1, np.floor(n/2))]  # Shorten PSD range by half to not have 
 
 
 # Plot Setup
-plt.rcParams['figure.figsize'] = [12, 8]
-plt.rcParams.update({'font.size': 10})
-fig, axs = plt.subplots(6, 1)  # Create a figure with (rows,cols)
+fig1 = plt.figure(1, figsize=(12, 8))  # Create figure for plots
+plt.rcParams.update({'font.size': 10})  # Dictate font size
+gs = GridSpec(4, 2, figure=fig1)  # Create a grid to be used to place subplots
 
 # Create the first plot (Original data)
-plt.sca(axs[0])  # First location of subplots
+ax1 = plt.subplot(gs[0, 0])
 plt.plot(t, f, color='c', linewidth=1, label='Raw data')
 plt.title("Original Data")
 plt.xlabel("Time (sec)")
 plt.ylabel("Amplitude (g)")
 plt0_xlim = np.floor(t.iloc[0]), t.iloc[-1]
 plt.xlim(plt0_xlim)  # x limit of first plot, may want to look into changing
-plt.legend()
+ax1.legend()
 
 # Create the second plot (RMS of original data)
-plt.sca(axs[1])  # Second location of subplots
+ax2 = plt.subplot(gs[1, 0])
 plt.plot(t_rms, f_rms, label='RMS')
 plt.title("RMS of Original Data")
 plt.xlabel("Time (sec)")
 plt.ylabel("Amplitude (g)")
 plt0_xlim = np.floor(t.iloc[0]), t.iloc[-1]
 plt.xlim(plt0_xlim)  # x limit of first plot, may want to look into changing
-plt.legend()
+ax2.legend()
 
 # Create the third plot, the original data in the frequency domain after FFT
-plt.sca(axs[2])  # Third location of the subplots
+ax3 = plt.subplot(gs[2, 0])
+plt.plot(freq, np.real(fhat[np.arange(1, np.floor(n/2))]), color='b')
+plt.xlim(np.floor(freq.iloc[0]), (np.ceil(freq.iloc[-1])))  # Change limits of plot to be just outside of bounds of freq
+plt.title("FFT (Original Data)")
+plt.xlabel("Frequency (Hz)")
+plt.ylabel("FFT")
+
+
+# Create the fourth plot, the original data in the frequency domain after PSD
+ax4 = plt.subplot(gs[3, 0])
 plt.plot(freq, PSD, color='c', linewidth=2, label='PSD')
 plt.plot([freq.iloc[0], freq.iloc[-1]], [PSDcutoff, PSDcutoff], color='r', linewidth=1, label='PSDcutoff filter')
 plt.xlim(np.floor(freq.iloc[0]), (np.ceil(freq.iloc[-1])))  # Change limits of plot to be just outside of bounds of freq
 plt.title("Power Spectral Density (Original Data, in Frequency Domain)")
 plt.xlabel("Frequency (Hz)")
 plt.ylabel("PSD (g^2/Hz)")
-plt.legend()
+ax4.legend()
 
 # =============================================================================
 # Add label on chart for frequencies found
@@ -147,34 +159,34 @@ plt.legend()
 # plt.text(text_loc_x, text_loc_y, text_to_show)  # Add a text on plot stating the frequencies above the cutoff filter
 # =============================================================================
 
-# Create the fourth plot, spectrogram
-plt.sca(axs[3])
+# Create the fifth plot, with cleaned data in time domain
+ax5 = plt.subplot(gs[0, 1])
+plt.plot(t, ffilt, color='k', linewidth=2, label='Cleaned')
+plt.xlim(plt0_xlim)
+plt.ylim(np.floor(np.min(ffilt)), np.ceil(max(ffilt)))
+plt.title("Cleaned Data")
+plt.xlabel("Time (sec)")
+plt.ylabel("Amplitude (g)")
+ax5.legend()
+
+# Create the sixth plot, with cleaned rms data in time domain
+ax6 = plt.subplot(gs[1, 1])
+plt.plot(t_rms_filt, f_rms_filt, color='k', linewidth=2, label=' RMS Cleaned')
+plt.xlim(plt0_xlim)
+plt.ylim(0, np.ceil(max(f_rms_filt)))
+plt.title("Cleaned Data")
+plt.xlabel("Time (sec)")
+plt.ylabel("Amplitude (g)")
+ax6.legend()
+
+# Create the seventh plot, spectrogram
+ax7 = plt.subplot(gs[2:, 1])  # Take up row 2 to the end, using col 1
 plt.specgram(f, Fs=int(1/dt))
 plt.title("Spectrogram (Original Data)")
 plt.xlim(plt0_xlim)
 plt.xlabel("Time (sec)")
 plt.ylabel("Frequency (Hz)")
 plt.ylim(0, 2500)
-
-# Create the fifth plot, with cleaned data in time domain
-plt.sca(axs[4])  # Fourth location of the subplots
-plt.plot(t, ffilt, color='k', linewidth=2, label='Cleaned')
-plt.xlim(plt0_xlim)
-plt.ylim(np.floor(np.min(ffilt)), np.ceil(max(ffilt)))
-plt.title("Cleaned Data")
-plt.xlabel("Time (sec)")
-plt.ylabel("Amplitude")
-plt.legend()
-
-# Create the sixth plot, with cleaned rms data in time domain
-plt.sca(axs[5])  # Fourth location of the subplots
-plt.plot(t_rms_filt, f_rms_filt, color='k', linewidth=2, label=' RMS Cleaned')
-plt.xlim(plt0_xlim)
-plt.ylim(0, np.ceil(max(f_rms_filt)))
-plt.title("Cleaned Data")
-plt.xlabel("Time (sec)")
-plt.ylabel("Amplitude")
-plt.legend()
 
 # Show the plot figure
 plt.tight_layout()  # Change layout to make chart not run togeher as much
