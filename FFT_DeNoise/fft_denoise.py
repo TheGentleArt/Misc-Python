@@ -90,7 +90,7 @@ df = df.assign(PSD=PSD)  # Add power spectral density result to dataframe, with 
 # Filter data using PSD values
 PSDcutoff = 100  # Magnitude of PSD which we want to be the limit of high-pass filter
 PSD_bool = PSD > PSDcutoff  # Creates a PSD boolean array, to be used for filtering data
-fhat_clean = fhat * (PSD > PSDcutoff)  # Filter out fft data based on cutoff value of PSD
+fhat_clean = fhat * (PSD_bool)  # Filter out fft data based on cutoff value of PSD
 
 # Compute inverse FFT, to get cleaned data
 ffilt = np.fft.ifft(fhat_clean)  # Inverse FFT for filtered time signal, to get cleaned data back
