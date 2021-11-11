@@ -1,9 +1,24 @@
 # J.Williams
 # In hopes of being used to filter steady-state(ish) data to filter out noise
-# Main sources:
-#    'Denoising Data with FFT [Python]','Steve Brunton', (YouTube)
-#     https://blog.endaq.com/vibration-analysis-fft-psd-and-spectrogram
+# Import data, plot data, show RMS of data, produce FFT of data, produce PSD of data, use a PSD cutoff to filter FFT data,
+# then regenerate 'cleaned' data by means of inverse FFT, plot cleaned data, plot PSD and spectrogram.
 
+# Main sources:
+#   'Denoising Data with FFT [Python]','Steve Brunton', (YouTube)
+#   https://blog.endaq.com/vibration-analysis-fft-psd-and-spectrogram
+
+# To do:
+#   Add multiple channels, maybe ask user for input on how many?
+#   Dynamically change y-axis of some of the plots
+#   Find out if there is a way of displaying the PSD plot, then asking user what value to set the filter at?
+#   Look into other colormaps, default spectrogram colormap is hard to read to me
+#   Change chart titles of cleaned data RMS chart.
+#   Re-evaluate the cleaned data to make sure it makes sense. Seems to make the engine off data have a little more amplitude than originally, 
+#   not sure if worth finding another way of editing based on near zero (non-event).
+#   Re-evaluate RMS window size. Need to find out what is a proper window size here.
+#   Perhaps give user option to filter data based on frequency range instead of PSD range?
+
+# Import libraries
 import numpy as np; pi = np.pi
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -12,6 +27,8 @@ import tkinter as tk
 from tkinter.filedialog import askopenfilename
 
 # Open File --- uses a GUI window to ask user for file
+print("Select .csv file to open...")
+print("If GUI for opening file is not seen, check if hidden behind program windows...")
 root = tk.Tk()
 root.withdraw()
 filepath = askopenfilename()
@@ -23,7 +40,9 @@ df.columns = ['Time (s)', 'Amplitude (g)']  # Add column labels to dataframe
 t = df.iloc[:, 0]  # Time (first column in csv file)
 f = df.iloc[:, 1]  # Amplitude (second column in csv file)
 n = len(t)  # Number of data points
-dt = (t.iloc[-1] - t.iloc[0]) / n  # sample rate (time step) ; average change in time per sample, calculating instead of having user input sampling rate. using average since not sure if always going to be constant. if not constant though, not sure this script valid. need to look into this after finished writing
+dt = (t.iloc[-1] - t.iloc[0]) / n  # Sample rate (time step) ; average change in time per sample, calculating instead of having user input sampling rate. 
+                                   # Using average since not sure if always going to be constant. if not constant though, not sure this script valid. 
+                                   # Need to look into this after finished writing.
 # f_delta = max(f) - min(f)  # Find the difference between max & min amplitude
 
 # Find values of interest and print
@@ -37,19 +56,20 @@ print("Crest factor :", accel_crest_factor)
 print("Standard deviation :", accel_std_dev, "(g)")
 
 # Get RMS data
-# Create a window to iterate over which is effetively the sampling rate,
-# Then find find out how many stepsit would take to get to get to end of time
-# Then create a blank array and fill with a rolling rms ...type thing.
-# Then store data in pandas series
-window_width_rms = int(np.floor(1/dt))  # RMS calculation window width
+# Create a window to iterate over which is effectively the sampling rate,
+# then find find out how many stepsit would take to get to get to end of time,
+# then create a blank array and fill with a rolling rms ...type thing,
+# then store data in pandas series
+window_width_rms = int(np.floor(1/dt))  # RMS calculation window width (May need to look into this more)
 steps_rms = int(np.floor(len(t)/window_width_rms))  # Number of steps for rms calculation
 t_rms = np.zeros(steps_rms)  # Create blank array of time for rms calculation
 f_rms = np.zeros(steps_rms)  # Create blank array of amplitude for rms calculation
 for i in range(0, steps_rms):
     t_rms[i] = np.mean(t[(i*window_width_rms):((i+1)*window_width_rms)])
     f_rms[i] = np.sqrt(np.mean(f[(i*window_width_rms):((i+1)*window_width_rms)]**2))
-t_rms = pd.Series(t_rms)  # Convert from numpy array to pandas series
-f_rms = pd.Series(f_rms)  # Convert from numpy array to pandas series
+t_rms = pd.Series(t_rms)  # Convert from numpy array to pandas series (may not need since this is not the same size as the other series in the df, but keeping for now)
+f_rms = pd.Series(f_rms)  # Convert from numpy array to pandas series (may not need since this is not the same size as the other series in the df, but keeping for now)
+
 
 # Compute the Fast Fourier Transform (FFT); break into components, add to df
 fhat = np.fft.fft(f)  # Compute the fft
@@ -62,13 +82,13 @@ df = df.assign(fhat=fhat)  # Add fft result to dataframe, with label of fhat
 # Do not need both components & complex fhat in df, but keeping for now ...
 
 # Find Power Spectral Density; add to df
-PSD = fhat * np.conj(fhat) / n  # Power Spectral Density. Units of amplitude^2/time
+PSD = fhat * np.conj(fhat) / n  # Power Spectral Density. Units of amplitude^2/time. ('Power' per frequency)
 PSD = np.real(PSD)  # convert from complex to real number, since imag component should be zero
 PSD = pd.Series(PSD)  # convert from numpy array to pandas series to easily add to dataframe
 df = df.assign(PSD=PSD)  # Add power spectral density result to dataframe, with label of PSD
 
 # Filter data using PSD values
-PSDcutoff = 500  # Magnitude of PSD which we want to be the limit of high-pass filter
+PSDcutoff = 100  # Magnitude of PSD which we want to be the limit of high-pass filter
 PSD_bool = PSD > PSDcutoff  # Creates a PSD boolean array, to be used for filtering data
 fhat_clean = fhat * (PSD > PSDcutoff)  # Filter out fft data based on cutoff value of PSD
 
@@ -189,5 +209,5 @@ plt.ylabel("Frequency (Hz)")
 plt.ylim(0, 2500)
 
 # Show the plot figure
-plt.tight_layout()  # Change layout to make chart not run togeher as much
+plt.tight_layout()  # Change layout to make chart not run together as much
 plt.show()  # Show the plots
