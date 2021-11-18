@@ -141,7 +141,7 @@ plt.title("Piston Force vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Force (kN)")
 plt.grid()
-ax3.legend()
+ax4.legend()
 
 plt.tight_layout()
 plt.show()
