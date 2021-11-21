@@ -124,8 +124,12 @@ ax1.set_xticks(major_ticks)
 ax1.set_xticks(minor_ticks,minor=True)
 ax1.grid(which="minor", alpha=0.5)
 plt.grid()
+textboxstring = '\n'.join(('Engine Speed={} rpm'.format(NE),
+                          'Stroke={} mm'.format(Stroke),
+                          'Conrod Length={} mm'.format(l_conrod),
+                          'Reciprocating Mass={} grams'.format(m_piston)))
+ax1.text(1,1,textboxstring, fontsize=8)
 ax1.legend(prop={'size':8})
-
 ax2 = plt.subplot(gs[1, 0])
 plt.plot(CA, velocity_piston, color='r', linewidth=1, label='Velocity')
 plt.plot(CA, velocity_piston_abs,
