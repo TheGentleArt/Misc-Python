@@ -65,6 +65,7 @@ def piston_acc(CA):
 CA = np.arange(0, 721, 1)  # crank angle list
 r_crank = Stroke/2  # crank throw radius
 omega = NE*2*pi*(1/60)  # Engine speed (rad/s)
+MPS = 2*Stroke*NE*(1/1000)*(1/60)  # Mean Piston Speed (m/s)
 
 # Create empty lists
 position_piston = []
@@ -139,6 +140,7 @@ plt.axvline(x=360, linestyle='-.', color = 'k', label = '_nolegned_')
 plt.axvline(x=720, linestyle='-.', color = 'k', label = '_nolegned_')
 plt.axvline(x=180, linestyle=':', color = 'k', label = 'BDC')
 plt.axvline(x=540, linestyle=':', color = 'k', label = '_nolegned_')
+plt.axhline(y=MPS, linewidth=0.75, color='m', label='Mean Piston Speed')
 plt.title("Piston Velocity vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Velocity (m/s)")
