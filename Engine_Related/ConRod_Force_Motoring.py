@@ -27,10 +27,10 @@ sin = math.sin
 sqrt = math.sqrt
 
 # User Inputs ---change this to input() later
-NE = 4000  # Engine Speed (rpm)
+NE = 6500  # Engine Speed (rpm)
 Stroke = 115.6  # mm
-l_conrod = 93.5  # mm
-m_piston = 88.63  # grams
+l_conrod = 103.7  # mm
+m_piston = 575  # grams
 
 
 # Functions
@@ -61,7 +61,7 @@ def piston_acc(CA):
 
 
 # Calculations
-CA = np.arange(0, 361, 1)  # crank angle list
+CA = np.arange(0, 721, 1)  # crank angle list
 r_crank = Stroke/2  # crank throw radius
 omega = NE*2*pi*(1/60)  # Engine speed (rad/s)
 
@@ -101,6 +101,8 @@ for i in CA:  # Fill in empty list (needed to find min pos first)
 fig1 = plt.figure(1, figsize=(12, 10))  # Create figure for plots
 plt.rcParams.update({'font.size': 10})  # Dictate font size
 gs = GridSpec(4, 1, figure=fig1)  # Create a grid to be used to place subplots
+major_ticks = np.arange(0,721,90)
+minor_ticks = np.arange(0,721,30)
 
 # Create the first plot
 ax1 = plt.subplot(gs[0, 0])
@@ -111,6 +113,9 @@ plt.plot(CA, position_piston_bdc,
 plt.title("Piston Position vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Position (mm)")
+ax1.set_xticks(major_ticks)
+ax1.set_xticks(minor_ticks,minor=True)
+ax1.grid(which="minor", alpha=0.5)
 plt.grid()
 ax1.legend()
 
@@ -121,6 +126,9 @@ plt.plot(CA, velocity_piston_abs,
 plt.title("Piston Position vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Velocity (m/s)")
+ax2.set_xticks(major_ticks)
+ax2.set_xticks(minor_ticks,minor=True)
+ax2.grid(which="minor", alpha=0.5)
 plt.grid()
 ax2.legend()
 
@@ -131,6 +139,9 @@ plt.plot(CA, acceleration_piston_abs,
 plt.title("Piston Position vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Acceleration (m/s^2)")
+ax3.set_xticks(major_ticks)
+ax3.set_xticks(minor_ticks,minor=True)
+ax3.grid(which="minor", alpha=0.5)
 plt.grid()
 ax3.legend()
 
@@ -140,6 +151,9 @@ plt.plot(CA, force_piston_abs, '--', color='m', linewidth=1, label='Abs Force')
 plt.title("Piston Force vs Crank Angle")
 plt.xlabel("Crank Angle (deg)")
 plt.ylabel("Force (kN)")
+ax4.set_xticks(major_ticks)
+ax4.set_xticks(minor_ticks,minor=True)
+ax4.grid(which="minor", alpha=0.5)
 plt.grid()
 ax4.legend()
 
